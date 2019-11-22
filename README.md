@@ -31,12 +31,14 @@ This software was compiled with:
 ### Running
 
 Here are the command-line options:
+`
 - --debug, -d         none            boolean flag for verbose print statements
 - --input, -i         input path      specify the image path for the image to blur
 - --output, -o        output path     specify the image path for the blurred image
 - --filtersize, -f    filter size     1 for 3x3, 2 for 5x5, 3 for 7x7
 - --cuda              none            boolean flag for using cuda vs cpu
 - --help, -h          none            display help for this program
+`
 
 Example execution on Linux command-line:
 ./blur.exe --debug --input img/dog.jpg --filtersize 2
