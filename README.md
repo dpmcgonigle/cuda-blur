@@ -43,6 +43,11 @@ Here are the command-line options:
 Example execution on Linux command-line:
 ./blur.exe --debug --input img/dog.jpg --filtersize 2
 
+![Filter Size 1](./img/dog_blur_size-1.jpg)
+![Filter Size 2](./img/dog_blur_size-2.jpg)
+![Filter Size 3](./img/dog_blur_size-3.jpg)
+![Filter Size 4](./img/dog_blur_size-4.jpg)
+
 ## Authors
 
 * **Dan McGonigle** [dpmcgonigle](https://github.com/dpmcgonigle)

@@ -12,13 +12,15 @@
 *       --debug, -d         none            boolean flag for verbose print statements
 *       --input, -i         input path      specify the image path for the image to blur
 *       --output, -o        output path     specify the image path for the blurred image
+*       --filtersize, -f    filter size     1 for 3x3, 2 for 5x5, 3 for 7x7
+*       --cuda              none            boolean flag for using cuda vs cpu
 *       --help, -h          none            display help for this program
 *
 *   Compiling the program:
 *       Simply use the make file
 *
 *   Running the program:
-*       ./blur.exe --debug --input img/mountain.jpg
+*       ./blur.exe --debug --input img/mountain.jpg --filtersize 2
 */
 
 #define cimg_display 0
@@ -58,7 +60,7 @@ int main(int argc, char** argv)
             ("help,h", "Print help messages") 
             ("input,i", po::value(&inputPath), "Path of the image to blur (REQUIRED).")
             ("output,o", po::value(&outputPath), "Path of the resulting output.")
-            ("filtersize,f", po::value(&filterSize), "Filter size. 1 => 3x3, 2 => 5x5, 3 => 7x7, etc.")
+            ("filtersize,f", po::value(&filterSize) -> default_value(1), "Filter size. 1 => 3x3, 2 => 5x5, 3 => 7x7, etc.")
             ("cuda,c", po::bool_switch(&cudaFlag), "Perform blur operation on CUDA. Otherwise perform sequentially on single CPU.")
             ("debug,d", po::bool_switch(&debugFlag), "Enable verbose debugging statements."); 
  

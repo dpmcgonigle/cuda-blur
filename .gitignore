@@ -5,7 +5,7 @@
 
 # Misc #
 ########
-__pycache__
+*.swp       # swap files marking open files 
 
 # Directories #
 ########
