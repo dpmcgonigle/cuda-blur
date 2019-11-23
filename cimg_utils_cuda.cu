@@ -14,6 +14,7 @@
 #include <iostream> 
 #include <stdlib.h>
 #include <vector>
+#include <chrono>
 
 namespace cl=cimg_library;
  
@@ -152,9 +153,6 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
     //unsigned char *cuda_image = image.data();
     //unsigned char *cuda_image;
 
-    //  flatten filter
-    //cuda_filter = &(filter[0][0]);
-
     //  Declare GPU memory pointers
     unsigned char *cuda_red_blurred, *cuda_green_blurred, *cuda_blue_blurred;//, *cuda_image_blurred;
 
@@ -205,7 +203,14 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
     gpuErrchk( cudaMemcpy(cuda_red, cpu_red, sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpy(cuda_green, cpu_green, sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice) );
     gpuErrchk( cudaMemcpy(cuda_blue, cpu_blue, sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice) );
+
+
     
+    //  Only the blurring operation should be timed
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+
+
     //  Apply blur
     apply_blur_cuda<<<grid_size, block_size>>> (cuda_red, 
                                                 cuda_red_blurred, 
@@ -225,6 +230,16 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
                                                 image.width(), 
                                                 cuda_filter, 
                                                 filterSize);
+
+
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "=========\nBlur time: " <<
+        std::to_string( std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() ) << "[µs], or " <<
+        std::to_string( std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() ) << "[ns]" << std::endl;
+
+
 
     gpuErrchk( cudaDeviceSynchronize() );
 

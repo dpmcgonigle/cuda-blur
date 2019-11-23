@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <cmath>
+#include <chrono>
 
 namespace cl=cimg_library;
  
@@ -51,6 +52,11 @@ cl::CImg<unsigned char> blur_sequential( cl::CImg<unsigned char> image , int fil
 
     printFilter(filter, filterSize);
 
+
+    //  Only the blurring operation should be timed
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+
     //  Loop over image channels
     cimg_forC(image, c)
     {
@@ -78,6 +84,14 @@ cl::CImg<unsigned char> blur_sequential( cl::CImg<unsigned char> image , int fil
             }
         }
     }
+
+
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+    std::cout << "=========\nBlur time: " <<
+        std::to_string( std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() ) << "[µs], or " <<
+        std::to_string( std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() ) << "[ns]" << std::endl;
+
 
     return image;
 }

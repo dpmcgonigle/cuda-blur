@@ -117,6 +117,8 @@ int main(int argc, char** argv)
     } 
  
     // application code here // 
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     debug("Program start", debugFlag);
     debug("Using CUDA? "+std::to_string( cudaFlag ), debugFlag);
     cl::CImg<unsigned char> image(inputPath.c_str());
@@ -125,9 +127,6 @@ int main(int argc, char** argv)
     debug("CImg channels: " + std::to_string( image.spectrum() ) , debugFlag );
 
 
-    //  Only the blurring operation should be timed
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
     image = blur(image, filterSize, cudaFlag);
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -135,7 +134,7 @@ int main(int argc, char** argv)
     //  Save image
     image.save(outputPath.c_str());
 
-    debug("Program end \nBlurring Runtime: " 
+    debug("Program end \nRuntime: " 
         + std::to_string( std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() ) + "[µs], or " +
         std::to_string( std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count() ) + "[ns]", debugFlag);
   } 
