@@ -30,7 +30,7 @@ cl::CImg<unsigned char> blur( cl::CImg<unsigned char> image , int filterSize , b
     if (cudaFlag)
     {
         //  Placeholding until cuda function finished
-        return blur_sequential(image, filterSize);
+        return blur_cuda(image, filterSize);
     }
     else
     {

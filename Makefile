@@ -2,20 +2,28 @@
 #   Linking libraries needed
 #       lboost_program_options for command-line options
 #       lpthread for CImg, for whatever reason
+#       lcudart for CUDA
 CC=g++
+CUDACC=nvcc
 CFLAGS=-c -Wall
-LDFLAGS=-lboost_program_options -lpthread
+CUDACFLAGS=-c
+LDFLAGS=-lboost_program_options -lpthread -lcudart
 SOURCES=main.cpp utils.cpp cimg_utils.cpp
+CUDASOURCES=cimg_utils_cuda.cu
 OBJECTS=$(SOURCES:.cpp=.o)
+CUDAOBJECTS=$(CUDASOURCES:.cu=.o)
 EXECUTABLE=blur.exe
 
 #   Linking; No output
-all: $(SOURCES) $(EXECUTABLE)
+all: $(SOURCES) $(CUDASOURCES) $(EXECUTABLE)
+#all: $(SOURCES) $(EXECUTABLE)
 
 #   Compiling Executable
 #   Example output: g++ main.o utils.o -o blur.exe -lboost_program_options
-$(EXECUTABLE): $(OBJECTS) 
-	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
+$(EXECUTABLE): $(OBJECTS) $(CUDAOBJECTS)
+	$(CC) $(OBJECTS) $(CUDAOBJECTS) -o $@ $(LDFLAGS)
+#$(EXECUTABLE): $(OBJECTS)
+#	$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
 #   Compiling Sources
 #   Build .o from .cpp, Special variables $@ and $< expand to the target and first dependency respectively
@@ -23,6 +31,11 @@ $(EXECUTABLE): $(OBJECTS)
 .cpp.o:
 	$(CC) $< -o $@ $(CFLAGS)
 
+#   Compiling Cuda Sources
+#.cu.o:
+#	$(CUDACC) $(CUDACFLAGS) $(CUDASOURCES) -o $(CUDAOBJECTS)
+cimg_utils_cuda.o: cimg_utils_cuda.cu
+	nvcc -c cimg_utils_cuda.cu -o cimg_utils_cuda.o
 
 
 

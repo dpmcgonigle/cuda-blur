@@ -118,6 +118,7 @@ int main(int argc, char** argv)
  
     // application code here // 
     debug("Program start", debugFlag);
+    debug("Using CUDA? "+std::to_string( cudaFlag ), debugFlag);
     cl::CImg<unsigned char> image(inputPath.c_str());
     debug("CImg width: " + std::to_string( image.width() ) , debugFlag );;
     debug("CImg height: " + std::to_string( image.height() ) , debugFlag );;
