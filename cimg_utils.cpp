@@ -14,8 +14,8 @@
 #include <iostream> 
 #include <stdlib.h>
 #include <vector>
+#include <cmath>
 
-//namespace cl=cimg_library;
 namespace cl=cimg_library;
  
 //  Blur
@@ -27,14 +27,29 @@ cl::CImg<unsigned char> blur( cl::CImg<unsigned char> image , int filterSize , b
         image(x,80,0,0)=255; 
     }
     */
-    return blur_sequential(image, filterSize, cudaFlag);
+    if (cudaFlag)
+    {
+        //  Placeholding until cuda function finished
+        return blur_sequential(image, filterSize);
+    }
+    else
+    {
+        return blur_sequential(image, filterSize);
+    }
 }
 
 //  Sequential blur
-cl::CImg<unsigned char> blur_sequential( cl::CImg<unsigned char> image , int filterSize , bool cudaFlag)
+cl::CImg<unsigned char> blur_sequential( cl::CImg<unsigned char> image , int filterSize )
 {
-    std::vector<std::vector<float>> filter = getFilter(filterSize);
-    printFilter(filter);
+    //  Had to ditch vector of vectors, as they apparently can't be sent to cuda
+    //std::vector<std::vector<float>> filter = getFilter(filterSize);
+
+    //  Create filter 2D array
+    float **filter = new float*[2*filterSize + 1];
+
+    getFilter(filter, filterSize);
+
+    printFilter(filter, filterSize);
 
     //  Loop over image channels
     cimg_forC(image, c)
@@ -67,7 +82,66 @@ cl::CImg<unsigned char> blur_sequential( cl::CImg<unsigned char> image , int fil
     return image;
 }
 
-//  Filter
+/*      -getFilter-
+Create gaussian filter with formula from sources below.
+filter is a pointer to a 2d array of floats, 
+    the first dimension of which has already been initilized dynamically.
+This approach replaced the 2d vector approach, as 2d vectors can't cuda!
+
+Information on gaussian filter from:
+Obtained through http://dev.theomader.com/gaussian-kernel-calculator/
+https://www.geeksforgeeks.org/gaussian-filter-generation-c/
+
+Example size 1 filter:
+0.077847,    0.123317,   0.077847
+0.123317,    0.195346,   0.123317
+0.077847,    0.123317,   0.077847
+
+Example size 2 filter:
+0.003765,  0.015019,   0.023792,   0.015019,   0.003765
+0.015019,  0.059912,   0.094907,   0.059912,   0.015019
+0.023792,  0.094907,   0.150342,   0.094907,   0.023792
+0.015019,  0.059912,   0.094907,   0.059912,   0.015019
+0.003765,  0.015019,   0.023792,   0.015019,   0.003765
+*/
+void getFilter(float **filter, int filterSize)
+{
+    //  Initialize second dimension of float 2d array
+    for (int row=0; row<2*filterSize + 1; row++)
+    {
+        filter[row] = new float[2*filterSize + 1];
+    }
+
+    //  Initilize standard deviation to 1.0
+    double sigma = 1.0;
+    double r, s = 2.0 * sigma * sigma;
+
+    //  Sum for normalization
+    double sum = 0.0;
+
+    //  Generate kernel
+    for (int row = -filterSize; row <= filterSize; row++)
+    {
+        for (int col = -filterSize; col <= filterSize; col++)
+        {
+            r = sqrt( row * row + col * col );
+            filter[row + filterSize][col + filterSize] = (exp(-(r * r) / s)) / (M_PI * s); 
+            sum += filter[row + filterSize][col + filterSize];
+        }
+    }
+
+    //  Normalize kernel
+    for (int row = 0; row < 2*filterSize + 1; row++)
+    {
+        for (int col = 0; col < 2*filterSize + 1; col++)
+        {
+            filter[row][col] /= sum;
+        }
+    }
+}
+
+//  getFilter   (DEPRECATED)
+//  Since you can't put 2d vectors onto cuda, I have abandoned this approach in favor of 2d array
 std::vector<std::vector<float>> getFilter(int filterSize)
 {
     //  FILTERS for size 1 through 3
@@ -139,9 +213,22 @@ std::vector<std::vector<float>> getFilter(int filterSize)
 }
 
 //  Print Filter
+void printFilter(float **filter, int filterSize)
+{
+    for (int row=0; row<2*filterSize + 1; row++)
+    {
+        for (int col=0; col<2*filterSize + 1; col++)
+        {
+            std::cout << filter[row][col] << ", ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 void printFilter(std::vector<std::vector<float>> filter)
 {
     std::cout << "Filter:" << std::endl;
+
     for(auto& row:filter)
     {
         for(auto& col:row)
@@ -150,4 +237,6 @@ void printFilter(std::vector<std::vector<float>> filter)
         }
         std::cout << std::endl;
     }
+
 }
+

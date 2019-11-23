@@ -19,10 +19,15 @@ namespace cl=cimg_library;
 cl::CImg<unsigned char> blur( cl::CImg<unsigned char> image , int filterSize , bool cudaFlag );
 
 //  Blur original image sequentially
-cl::CImg<unsigned char> blur_sequential( cl::CImg<unsigned char> image , int filterSize , bool cudaFlag );
+cl::CImg<unsigned char> blur_sequential( cl::CImg<unsigned char> image , int filterSize );
+
+//  Blur original image with cuda
+cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSize );
 
 //  Filter based on filterSize
 std::vector<std::vector<float>> getFilter(int filterSize);
+void getFilter(float **filter, int filterSize);
 
 //  Print filter
 void printFilter(std::vector<std::vector<float>> filter);
+void printFilter(float **filter, int filterSize);
