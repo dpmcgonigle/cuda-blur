@@ -21,6 +21,16 @@ namespace cl=cimg_library;
 *           CUDA FUNCTIONS
 */
 
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true)
+{
+   if (code != cudaSuccess) 
+   {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
+
 /*
 *   Split the channels apart.
 *   uchar4 is a built-in vector struct with special allignment:
@@ -65,7 +75,7 @@ void apply_blur_cuda(const unsigned char* const input, unsigned char* const outp
         return;
     }
     int index = row * cols + col;
-    /*
+    
     float sum = 0.0;
 
     for (int frow = row - filterSize; frow <= row + filterSize; frow++)
@@ -78,10 +88,7 @@ void apply_blur_cuda(const unsigned char* const input, unsigned char* const outp
             sum += filter[vrow*filterSize+vcol] * input[frow*cols+fcol];
         }
     }
-    output[index] = sum;
-    */
-
-    output[index] = input[index] / 2;
+    output[index] = (unsigned char)sum;
 }
 
 /*
@@ -154,28 +161,26 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
     //  Allocate memory to cuda
     int channel_size = image.get_channel(0).size();
     std::cout << "Channel size: " << channel_size << std::endl;
-    std::cout << "Unsigned char size: " << sizeof(unsigned char) << std::endl;
-    std::cout << "Int size: " << sizeof(int) << std::endl;
 
-    cudaMalloc((void**)&cuda_red, sizeof(unsigned char) * channel_size);
-    cudaMalloc((void**)&cuda_red_blurred, sizeof(unsigned char) * channel_size);
-    cudaMalloc((void**)&cuda_green, sizeof(unsigned char) * channel_size);
-    cudaMalloc((void**)&cuda_green_blurred, sizeof(unsigned char) * channel_size);
-    cudaMalloc((void**)&cuda_blue, sizeof(unsigned char) * channel_size);
-    cudaMalloc((void**)&cuda_blue_blurred, sizeof(unsigned char) * channel_size);
-    cudaMalloc((void**)&cuda_filter, sizeof(float) * (2*filterSize+1) * (2*filterSize+1));
-    //cudaMalloc((void**)&cuda_image, sizeof(uchar4) * image.size());
-    //cudaMalloc((void**)&cuda_image_blurred, sizeof(uchar4) * image.size());
-    //cudaMalloc((void**)&cuda_image, sizeof(unsigned char) * image.size());
-    //cudaMalloc((void**)&cuda_image_blurred, sizeof(unsigned char) * image.size());
+    gpuErrchk( cudaMalloc((void**)&cuda_red, sizeof(unsigned char) * channel_size) );
+    gpuErrchk( cudaMalloc((void**)&cuda_red_blurred, sizeof(unsigned char) * channel_size) );
+    gpuErrchk( cudaMalloc((void**)&cuda_green, sizeof(unsigned char) * channel_size) );
+    gpuErrchk( cudaMalloc((void**)&cuda_green_blurred, sizeof(unsigned char) * channel_size) );
+    gpuErrchk( cudaMalloc((void**)&cuda_blue, sizeof(unsigned char) * channel_size) );
+    gpuErrchk( cudaMalloc((void**)&cuda_blue_blurred, sizeof(unsigned char) * channel_size) );
+    gpuErrchk( cudaMalloc((void**)&cuda_filter, sizeof(float) * (2*filterSize+1) * (2*filterSize+1)) );
+    //gpuErrchk( cudaMalloc((void**)&cuda_image, sizeof(uchar4) * image.size()) );
+    //gpuErrchk( cudaMalloc((void**)&cuda_image_blurred, sizeof(uchar4) * image.size()) );
+    //gpuErrchk( cudaMalloc((void**)&cuda_image, sizeof(unsigned char) * image.size()) );
+    //gpuErrchk( cudaMalloc((void**)&cuda_image_blurred, sizeof(unsigned char) * image.size()) );
 
     //  Transfer image and filter to GPU
-    //cudaMemcpy(cuda_image, image.data(), sizeof(uchar4) * image.size(), cudaMemcpyHostToDevice);
-    //cudaMemcpy(cuda_image, image.data(), sizeof(unsigned char) * image.size(), cudaMemcpyHostToDevice);
-    cudaMemcpy(cuda_filter, &(filter[0][0]), sizeof(float) * (2*filterSize+1) * (2*filterSize+1), cudaMemcpyHostToDevice);
-    //cudaMemcpy(cuda_red, cuda_red, sizeof(unsigned char) * image.height() * image.width(), cudaMemcpyHostToDevice);
-    //cudaMemcpy(cuda_green, cuda_green, sizeof(unsigned char) * image.height() * image.width(), cudaMemcpyHostToDevice);
-    //cudaMemcpy(cuda_blue, cuda_blue, sizeof(unsigned char) * image.height() * image.width(), cudaMemcpyHostToDevice);
+    //gpuErrchk( cudaMemcpy(cuda_image, image.data(), sizeof(uchar4) * image.size(), cudaMemcpyHostToDevice) );
+    //gpuErrchk( cudaMemcpy(cuda_image, image.data(), sizeof(unsigned char) * image.size(), cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(cuda_filter, &(filter[0][0]), sizeof(float) * (2*filterSize+1) * (2*filterSize+1), cudaMemcpyHostToDevice) );
+    //gpuErrchk( cudaMemcpy(cuda_red, cuda_red, sizeof(unsigned char) * image.height() * image.width(), cudaMemcpyHostToDevice) );
+    //gpuErrchk( cudaMemcpy(cuda_green, cuda_green, sizeof(unsigned char) * image.height() * image.width(), cudaMemcpyHostToDevice) );
+    //gpuErrchk( cudaMemcpy(cuda_blue, cuda_blue, sizeof(unsigned char) * image.height() * image.width(), cudaMemcpyHostToDevice) );
 
 /*  Kept getting segmentation faults on merge_channels
     //  Split channels
@@ -187,9 +192,19 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
                                                 cuda_blue);
 */
 
-    cudaMemcpy(cuda_red, (unsigned char*)image.get_channel(0), sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice);
-    cudaMemcpy(cuda_green, (unsigned char*)image.get_channel(1), sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice);
-    cudaMemcpy(cuda_blue, (unsigned char*)image.get_channel(2), sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice);
+/*
+    unsigned char cpu_red = new unsigned char [channel_size];
+    unsigned char cpu_green = new unsigned char [channel_size];
+    unsigned char cpu_blue = new unsigned char [channel_size];
+*/
+
+    unsigned char *cpu_red = image.get_channel(0);
+    unsigned char *cpu_green = image.get_channel(1);
+    unsigned char *cpu_blue = image.get_channel(2);
+
+    gpuErrchk( cudaMemcpy(cuda_red, cpu_red, sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(cuda_green, cpu_green, sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice) );
+    gpuErrchk( cudaMemcpy(cuda_blue, cpu_blue, sizeof(unsigned char) * channel_size, cudaMemcpyHostToDevice) );
     
     //  Apply blur
     apply_blur_cuda<<<grid_size, block_size>>> (cuda_red, 
@@ -211,13 +226,15 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
                                                 cuda_filter, 
                                                 filterSize);
 
+    gpuErrchk( cudaDeviceSynchronize() );
+
     unsigned char *red_blurred =  (unsigned char*)malloc (sizeof(unsigned char) * channel_size);
     unsigned char *green_blurred = (unsigned char*)malloc (sizeof(unsigned char) * channel_size);
     unsigned char *blue_blurred = (unsigned char*)malloc (sizeof(unsigned char) * channel_size);
-    cudaMemcpy(&red_blurred, cuda_red_blurred, sizeof(unsigned char) * channel_size, cudaMemcpyDeviceToHost);
-    cudaMemcpy(&green_blurred, cuda_green_blurred, sizeof(unsigned char) * channel_size, cudaMemcpyDeviceToHost);
-    cudaMemcpy(&blue_blurred, cuda_blue_blurred, sizeof(unsigned char) * channel_size, cudaMemcpyDeviceToHost);
-    //cudaMemcpy(&image, cuda_image, image.size(), cudaMemcpyDeviceToHost);
+    gpuErrchk( cudaMemcpy(red_blurred, cuda_red_blurred, sizeof(unsigned char) * channel_size, cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(green_blurred, cuda_green_blurred, sizeof(unsigned char) * channel_size, cudaMemcpyDeviceToHost) );
+    gpuErrchk( cudaMemcpy(blue_blurred, cuda_blue_blurred, sizeof(unsigned char) * channel_size, cudaMemcpyDeviceToHost) );
+    //gpuErrchk( cudaMemcpy(&image, cuda_image, image.size(), cudaMemcpyDeviceToHost) );
 
 
     //  loop through image to get blurred pixels
@@ -225,10 +242,13 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
     {
         for (int col = 0; col < image.width(); col++)
         {
-            image(col, row, 0, 0) = red_blurred[row*image.width()+col];
-            image(col, row, 0, 1) = green_blurred[row*image.width()+col];
-            image(col, row, 0, 2) = blue_blurred[row*image.width()+col];
+            int index = row*image.width()+col;
+            //std::cout << "R" << (int)red_blurred[index] << "G" << (int)green_blurred[index] << "B" << (int)blue_blurred[index] << ", ";
+            image(col, row, 0, 0) = red_blurred[index];
+            image(col, row, 0, 1) = green_blurred[index];
+            image(col, row, 0, 2) = blue_blurred[index];
         }
+        //std::cout<<std::endl;
     }
 
 
@@ -242,11 +262,7 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
                                                 image.width());
 */
 
-    //cudaMemcpy(&image, cuda_image, image.size(), cudaMemcpyDeviceToHost);
-
-    char char_break;
-    std::cout << "Pause for character break before freeing up memory: ";
-    std::cin >> char_break;
+    //gpuErrchk( cudaMemcpy(&image, cuda_image, image.size(), cudaMemcpyDeviceToHost) );
 
     //  Free up space
     cudaFree(cuda_red);
@@ -258,9 +274,6 @@ cl::CImg<unsigned char> blur_cuda( cl::CImg<unsigned char> image , int filterSiz
     //cudaFree(cuda_image);
     //cudaFree(cuda_image_blurred);
     cudaFree(cuda_filter);
-
-    std::cout << "Pause for character break after freeing up memory: ";
-    std::cin >> char_break;
 
     return image;
 }
